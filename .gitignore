@@ -1,4 +1,4 @@
-data
+data/VOCdevkit
 weights
 **/__pycache__/
 data/VOCdevkit
