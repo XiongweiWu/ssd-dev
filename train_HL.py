@@ -231,6 +231,8 @@ def train():
             for i in range(len(targets[1])):
                 targets[0][i] = targets[1][i].clone()
                 targets[0][i][:,4] = targets[0][i][:,4].ge(1)
+        else:
+            targets[0] = targets[1]
         
         #print(np.sum([torch.sum(anno[:,-1] == 2) for anno in targets]))
 
