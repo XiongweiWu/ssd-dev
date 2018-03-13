@@ -1,0 +1,7 @@
+data
+weights
+**/__pycache__/
+data/VOCdevkit
+eval/
+**/*.so
+**/build/
