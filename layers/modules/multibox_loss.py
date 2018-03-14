@@ -61,7 +61,7 @@ class MultiBoxLoss(nn.Module):
         loc_data, conf_data = predictions
         priors = priors
         num = loc_data.size(0)
-        num_priors = (priors.size(0))
+        num_priors = (priors.size(0)) if priors.dim() == 2 else priors.size(1)
         num_classes = self.num_classes
 
         # match priors (default boxes) and ground truth boxes
@@ -70,7 +70,10 @@ class MultiBoxLoss(nn.Module):
         for idx in range(num):
             truths = targets[idx][:,:-1].data
             labels = targets[idx][:,-1].data
-            defaults = priors.data
+            if priors.dim() == 3: 
+                defaults = priors.data[idx,:,:]
+            else:
+                defaults = priors.data
             match(self.threshold,truths,defaults,self.variance,labels,loc_t,conf_t,idx)
         if GPU:
             loc_t = loc_t.cuda()
