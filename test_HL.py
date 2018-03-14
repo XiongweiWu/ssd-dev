@@ -33,6 +33,8 @@ parser.add_argument('--cuda', default=True, type=bool,
                     help='Use cuda to train model')
 parser.add_argument('--retest', default=False, type=bool,
                     help='test cache results')
+parser.add_argument('--C_agnostic', default=False,
+                    type=bool, help='class_agnostic or not')
 args = parser.parse_args()
 
 if not os.path.exists(args.save_folder):
@@ -63,6 +65,8 @@ priorbox = PriorBox(cfg)
 priors = Variable(priorbox.forward(), volatile=True)
 if not args.cuda:
     priors = priors.cpu()
+
+C_agnostic = args.C_agnostic
 
 
 def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image=300, thresh=0.005):
@@ -153,7 +157,7 @@ if __name__ == '__main__':
     # load net
     img_dim = (320,512)[args.size=='512']
     num_classes = (21, 81)[args.dataset == 'COCO']
-    net = build_net('test', img_dim, num_classes)    # initialize detector
+    net = build_net('test', img_dim, num_classes, C_agnostic)    # initialize detector
     state_dict = torch.load(args.trained_model)
     # create new OrderedDict that does not contain `module.`
 
