@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description='Receptive Field Block Net')
 parser.add_argument('-v', '--version', default='RFB_vgg',
                     help='RFB_vgg ,RFB_E_vgg or RFB_mobile version.')
 parser.add_argument('-s', '--size', default='320',
-                    help='300 or 512 input size.')
+                    help='320 or 512 input size.')
 parser.add_argument('-d', '--dataset', default='VOC',
                     help='VOC or COCO version')
 parser.add_argument('-m', '--trained_model', default='weights/RFB300_80_5.pth',
@@ -54,6 +54,8 @@ elif args.version == 'SINGLE_vgg':
     from models.SINGLE_Net_vgg import build_net
 elif args.version == 'FPN_vgg':
     from models.FPN_Net_vgg import build_net
+elif args.version == 'HL_vgg':
+    from models.HL_Net_vgg import build_net
 else:
     print('Unkown version!')
 
@@ -91,7 +93,7 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
             x = x.cuda()
 
         _t['im_detect'].tic()
-        out = net(x)      # forward pass
+        _, out = net(x)      # forward pass
         boxes, scores = detector.forward(out,priors)
         detect_time = _t['im_detect'].toc()
         boxes = boxes[0]
