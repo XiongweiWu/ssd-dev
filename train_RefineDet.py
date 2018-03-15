@@ -56,11 +56,18 @@ parser.add_argument('--save_folder', default='./weights/',
                     help='Location to save checkpoint models')
 parser.add_argument('--C_agnostic', default=False,
                     type=bool, help='class_agnostic or not')
+parser.add_argument('--log_dir', default='./logs/',
+                    help='Location to save logs')
 args = parser.parse_args()
 
 
 if not os.path.exists(args.save_folder):
     os.mkdir(args.save_folder)
+if not os.path.exists(args.log_dir):
+    os.mkdir(args.log_dir)
+
+log_file = os.path.join(args.log_dir, args.version+args.dataset+'.log')
+f_writer = open(log_file, 'w')
 
 if args.dataset == 'VOC':
     train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
@@ -98,9 +105,13 @@ C_agnostic = args.C_agnostic
 
 net = build_net('train', img_dim, num_classes, C_agnostic)
 print(net)
+f_writer.write(net)
+f_writer.write('\n')
+
 if args.resume_net == None:
     base_weights = torch.load(args.basenet)
     print('Loading base network...')
+    f_writer.write('Loading base network...\n')
     net.base.load_state_dict(base_weights)
 
     def xavier(param):
@@ -122,6 +133,7 @@ if args.resume_net == None:
             m.bias.data.zero_()
 
     print('Initializing weights...')
+    f_writer.write('Initializing weights...\n')
 # initialize newly added layers' weights with kaiming_normal method
     net.extras.apply(weights_init2)
     net.loc_1.apply(weights_init2)
@@ -183,6 +195,7 @@ def train():
     conf_loss = 0
     epoch = 0 + args.resume_epoch
     print('Loading Dataset...')
+    f_writer.write('Loading Dataset...\n')
 
     if args.dataset == 'VOC':
         dataset = VOCDetection(VOCroot, train_sets, preproc(
@@ -201,6 +214,7 @@ def train():
     stepvalues_COCO = (90 * epoch_size, 120 * epoch_size, 140 * epoch_size)
     stepvalues = (stepvalues_VOC,stepvalues_COCO)[args.dataset=='COCO']
     print('Training',args.version, 'on', dataset.name)
+    f_writer.write('Training',args.version, 'on', dataset.name, '\n')
     step_index = 0
 
     if args.resume_epoch > 0:
@@ -292,9 +306,17 @@ def train():
                   repr(iteration) + ' || L1: %.4f C1: %.4f||' % (loss_l[0].data[0],loss_c[0].data[0]) + 
                   ' || L2: %.4f C2: %.4f||' % (loss_l[1].data[0],loss_c[1].data[0]) + 
                   'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr))
+            f_writer.write('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
+                  + '|| Totel iter ' +
+                  repr(iteration) + ' || L1: %.4f C1: %.4f||' % (loss_l[0].data[0],loss_c[0].data[0]) + 
+                  ' || L2: %.4f C2: %.4f||' % (loss_l[1].data[0],loss_c[1].data[0]) + 
+                  'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr) + '\n')
 
     torch.save(net.state_dict(), args.save_folder +
                'Final_' + args.version +'_' + args.dataset+ '.pth')
+
+    f_writer.write('training finished!\n')
+    f_writer.close()
 
 
 def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size):
