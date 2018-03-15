@@ -12,4 +12,5 @@ the first stage.
 
 ```
 python train_HL.py -d VOC -v HL_vgg -s 320 --C_agnostic True --ngpu 4
+python test_HL.py -d VOC -v HL_vgg -s 320 --trained_model ./weights/Final_HL_vgg_VOC.pth
 ```
