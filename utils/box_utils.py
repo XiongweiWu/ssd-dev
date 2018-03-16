@@ -177,7 +177,7 @@ def encode_multi(matched, priors, offsets, variances):
     return torch.cat([g_cxcy, g_wh], 1)  # [num_priors,4]
 
 # Adapted from https://github.com/Hakuyume/chainer-ssd
-def decode(loc, priors, variances):
+def decode(loc, priors, variances, center_form=False):
     """Decode locations from predictions using priors to undo
     the encoding we did for offset regression at train time.
     Args:
@@ -193,8 +193,9 @@ def decode(loc, priors, variances):
     boxes = torch.cat((
         priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
         priors[:, 2:] * torch.exp(loc[:, 2:] * variances[1])), 1)
-    boxes[:, :2] -= boxes[:, 2:] / 2
-    boxes[:, 2:] += boxes[:, :2]
+    if not center_form:
+        boxes[:, :2] -= boxes[:, 2:] / 2
+        boxes[:, 2:] += boxes[:, :2]
     return boxes
 
 def decode_multi(loc, priors, offsets, variances):

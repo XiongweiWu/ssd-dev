@@ -20,7 +20,7 @@ class Detect(Function):
         # Parameters used in nms.
         self.variance = cfg['variance']
 
-    def forward(self, predictions, prior):
+    def forward(self, predictions, prior, C_agnostic=False,  center_form=False):
         """
         Args:
             loc_data: (tensor) Loc preds from loc layers
@@ -29,7 +29,13 @@ class Detect(Function):
                 Shape: [batch*num_priors,num_classes]
             prior_data: (tensor) Prior boxes and variances from priorbox layers
                 Shape: [1,num_priors,4]
+            if center_form is True, then return the results in center_form
         """
+
+        if C_agnostic:
+            num_classes = 2
+        else:
+            num_classes = self.num_classes
 
         loc, conf = predictions
 
@@ -39,7 +45,7 @@ class Detect(Function):
         num = loc_data.size(0)  # batch size
         self.num_priors = prior_data.size(0)
         self.boxes = torch.zeros(1, self.num_priors, 4)
-        self.scores = torch.zeros(1, self.num_priors, self.num_classes)
+        self.scores = torch.zeros(1, self.num_priors, num_classes)
 
         if num == 1:
             # size batch x num_classes x num_priors
@@ -47,13 +53,13 @@ class Detect(Function):
 
         else:
             conf_preds = conf_data.view(num, num_priors,
-                                        self.num_classes)
+                                        num_classes)
             self.boxes.expand_(num, self.num_priors, 4)
-            self.scores.expand_(num, self.num_priors, self.num_classes)
+            self.scores.expand_(num, self.num_priors, num_classes)
 
         # Decode predictions into bboxes.
         for i in range(num):
-            decoded_boxes = decode(loc_data[i], prior_data, self.variance)
+            decoded_boxes = decode(loc_data[i], prior_data, self.variance, center_form)
             # For each class, perform nms
             conf_scores = conf_preds[i].clone()
             '''
