@@ -66,7 +66,7 @@ if not os.path.exists(args.save_folder):
 if not os.path.exists(args.log_dir):
     os.mkdir(args.log_dir)
 
-log_file = os.path.join(args.log_dir, args.version+args.dataset+'.log')
+log_file = os.path.join(args.log_dir, args.version+args.dataset+'_refine_agnostic_{}.log'.format(args.C_agnostic))
 f_writer = open(log_file, 'w')
 
 if args.dataset == 'VOC':
@@ -237,7 +237,7 @@ def train():
             conf_loss = 0
             if (epoch % 40 == 0 and epoch > 0) or (epoch % 10 ==0 and epoch > 200):
                 torch.save(net.state_dict(), args.save_folder+args.version+'_'+args.dataset + '_epoches_'+
-                           repr(epoch) + '.pth')
+                           repr(epoch) + '_refine_agnostic_{}.pth'.format(C_agnostic))
             epoch += 1
 
         load_t0 = time.time()
@@ -313,7 +313,7 @@ def train():
                   'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr) + '\n')
 
     torch.save(net.state_dict(), args.save_folder +
-               'Final_' + args.version +'_' + args.dataset+ '.pth')
+               'Final_' + args.version +'_' + args.dataset+ '_refine_agnostic_{}.pth'.format(C_agnostic))
 
     f_writer.write('training finished!\n')
     f_writer.close()
