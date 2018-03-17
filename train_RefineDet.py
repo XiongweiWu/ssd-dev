@@ -105,8 +105,8 @@ C_agnostic = args.C_agnostic
 
 net = build_net('train', img_dim, num_classes, C_agnostic)
 print(net)
-f_writer.write(net)
-f_writer.write('\n')
+# f_writer.write(net)
+# f_writer.write('\n')
 
 if args.resume_net == None:
     base_weights = torch.load(args.basenet)
