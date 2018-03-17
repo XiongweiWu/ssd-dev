@@ -214,7 +214,7 @@ def train():
     stepvalues_COCO = (90 * epoch_size, 120 * epoch_size, 140 * epoch_size)
     stepvalues = (stepvalues_VOC,stepvalues_COCO)[args.dataset=='COCO']
     print('Training',args.version, 'on', dataset.name)
-    f_writer.write('Training',args.version, 'on', dataset.name, '\n')
+    f_writer.write('Training'+args.version+ 'on'+ dataset.name+ '\n')
     step_index = 0
 
     if args.resume_epoch > 0:
