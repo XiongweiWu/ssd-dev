@@ -249,7 +249,8 @@ def add_extras(size, cfg, i, batch_norm=False):
 
 extras = {
     '300': [1024, 'S', 512, 'S', 256],
-    '512': [1024, 'S', 512, 'S', 256, 'S', 256,'S',256],
+    # '512': [1024, 'S', 512, 'S', 256, 'S', 256,'S',256],
+    '512': [256, 'S', 512],
     '320': [256, 'S', 512],
 }
 
@@ -309,7 +310,8 @@ def multibox(size, vgg, extra_layers, extra_conv_layers, extra_smooth_layers, cf
 
 mbox = {
     '300': [6, 6, 6, 6, 4, 4],  # number of boxes per feature map location
-    '512': [6, 6, 6, 6, 6, 4, 4],
+    # '512': [6, 6, 6, 6, 6, 4, 4],
+    '512': [3, 3, 3, 3],
     '320': [3, 3, 3, 3],
 }
 
@@ -318,8 +320,8 @@ def build_net(phase, size=320, num_classes=21, C_agnostic=False):
     if phase != "test" and phase != "train":
         print("Error: Phase not recognized")
         return
-    if size != 320:
-        print("Error: Sorry only 320 are supported!")
+    if size != 320 and size != 512:
+        print("Error: Sorry only 320 or 512 are supported!")
         return
     vgg_layers = vgg(base[str(size)], 3)
     extra_layers = add_extras(size, extras[str(size)], 1024)

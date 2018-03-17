@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-v', '--version', default='RFB_vgg',
                     help='RFB_vgg ,RFB_E_vgg or RFB_mobile version.')
 parser.add_argument('-s', '--size', default='320',
-                    help='300 or 512 input size.')
+                    help='320 or 512 input size.')
 parser.add_argument('-d', '--dataset', default='VOC',
                     help='VOC or COCO dataset')
 parser.add_argument(
@@ -63,8 +63,7 @@ if not os.path.exists(args.save_folder):
 
 if args.dataset == 'VOC':
     train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
-    # cfg = (VOC_300, VOC_512)[args.size == '512']
-    cfg = VOC_320
+    cfg = (VOC_320, VOC_512)[args.size == '512']
 else:
     train_sets = [('2014', 'train'),('2014', 'valminusminival')]
     cfg = (COCO_300, COCO_512)[args.size == '512']

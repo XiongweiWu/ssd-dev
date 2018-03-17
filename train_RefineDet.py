@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-v', '--version', default='RFB_vgg',
                     help='RFB_vgg ,RFB_E_vgg or RFB_mobile version.')
 parser.add_argument('-s', '--size', default='320',
-                    help='300 or 512 input size.')
+                    help='320 or 512 input size.')
 parser.add_argument('-d', '--dataset', default='VOC',
                     help='VOC or COCO dataset')
 parser.add_argument(
@@ -60,6 +60,8 @@ parser.add_argument('--log_dir', default='./logs/',
                     help='Location to save logs')
 parser.add_argument('--extra', type=str,
                     help='specify extra infos to describe the network')
+parser.add_argument('--bp_anchors', default=False,
+                    type=bool, help='whether bp via refined anchors')
 args = parser.parse_args()
 
 
@@ -73,8 +75,7 @@ f_writer = open(log_file, 'w')
 
 if args.dataset == 'VOC':
     train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
-    # cfg = (VOC_300, VOC_512)[args.size == '512']
-    cfg = VOC_320
+    cfg = (VOC_320, VOC_512)[args.size == '512']
 else:
     train_sets = [('2014', 'train'),('2014', 'valminusminival')]
     cfg = (COCO_300, COCO_512)[args.size == '512']
@@ -280,8 +281,11 @@ def train():
         conf_data = Variable(out[0][1].data.clone(), volatile=True)
         ## decode and clamp
         r_priors = decode(loc_data, priors.data, cfg['variance'])
-        # r_priors = Variable(r_priors, volatile=True)
-        r_priors = Variable(r_priors, requires_grad=True)
+        if args.bp_anchors:
+            r_priors = Variable(r_priors, requires_grad=True)
+        else:
+            r_priors = Variable(r_priors, volatile=True)
+
         # for i in range(loc_data.size(0)):
         #     z = box_utils.decode(loc_data.data[i,:,:], priors.data, cfg['variance'])
         #     # loc_data[i,:,:].clamp_(0,1)
