@@ -58,6 +58,8 @@ parser.add_argument('--C_agnostic', default=False,
                     type=bool, help='class_agnostic or not')
 parser.add_argument('--log_dir', default='./logs/',
                     help='Location to save logs')
+parser.add_argument('--extra', type=str,
+                    help='specify extra infos to describe the network')
 args = parser.parse_args()
 
 
@@ -66,7 +68,7 @@ if not os.path.exists(args.save_folder):
 if not os.path.exists(args.log_dir):
     os.mkdir(args.log_dir)
 
-log_file = os.path.join(args.log_dir, args.version+args.dataset+'_refine_agnostic_{}.log'.format(args.C_agnostic))
+log_file = os.path.join(args.log_dir, args.version+args.dataset+'_refine_agnostic_{}.log.{}'.format(args.C_agnostic, args.extra))
 f_writer = open(log_file, 'w')
 
 if args.dataset == 'VOC':
@@ -237,7 +239,7 @@ def train():
             conf_loss = 0
             if (epoch % 40 == 0 and epoch > 0) or (epoch % 10 ==0 and epoch > 200):
                 torch.save(net.state_dict(), args.save_folder+args.version+'_'+args.dataset + '_epoches_'+
-                           repr(epoch) + '_refine_agnostic_{}.pth'.format(C_agnostic))
+                           repr(epoch) + '_refine_agnostic_{}.pth.{}'.format(C_agnostic, args.extra))
             epoch += 1
 
         load_t0 = time.time()
@@ -278,7 +280,8 @@ def train():
         conf_data = Variable(out[0][1].data.clone(), volatile=True)
         ## decode and clamp
         r_priors = decode(loc_data, priors.data, cfg['variance'])
-        r_priors = Variable(r_priors, volatile=True)
+        # r_priors = Variable(r_priors, volatile=True)
+        r_priors = Variable(r_priors, requires_grad=True)
         # for i in range(loc_data.size(0)):
         #     z = box_utils.decode(loc_data.data[i,:,:], priors.data, cfg['variance'])
         #     # loc_data[i,:,:].clamp_(0,1)
@@ -313,7 +316,7 @@ def train():
                   'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr) + '\n')
 
     torch.save(net.state_dict(), args.save_folder +
-               'Final_' + args.version +'_' + args.dataset+ '_refine_agnostic_{}.pth'.format(C_agnostic))
+               'Final_' + args.version +'_' + args.dataset+ '_refine_agnostic_{}.pth.{}'.format(C_agnostic, args.extra))
 
     f_writer.write('training finished!\n')
     f_writer.close()
