@@ -38,13 +38,13 @@ parser.add_argument('--cuda', default=True,
                     type=bool, help='Use cuda to train model')
 parser.add_argument('--ngpu', default=1, type=int, help='gpus')
 parser.add_argument('--lr', '--learning-rate',
-                    default=1e-3, type=float, help='initial learning rate')
+                    default=4e-3, type=float, help='initial learning rate')
 parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
 parser.add_argument(
     '--resume_net', default=None, help='resume net for retraining')
 parser.add_argument('--resume_epoch', default=0,
                     type=int, help='resume iter for retraining')
-parser.add_argument('-max','--max_epoch', default=250,
+parser.add_argument('-max','--max_epoch', default=300,
                     type=int, help='max epoch for retraining')
 parser.add_argument('--weight_decay', default=5e-4,
                     type=float, help='Weight decay for SGD')
@@ -80,17 +80,8 @@ else:
     train_sets = [('2014', 'train'),('2014', 'valminusminival')]
     cfg = (COCO_300, COCO_512)[args.size == '512']
 
-if args.version == 'RFB_vgg':
-    from models.RFB_Net_vgg import build_net
-elif args.version == 'RFB_E_vgg':
-    from models.RFB_Net_E_vgg import build_net
-elif args.version == 'RFB_mobile':
-    from models.RFB_Net_mobile import build_net
-    cfg = COCO_mobile_300
-elif args.version == 'SINGLE_vgg':
-    from models.SINGLE_Net_vgg import build_net
-elif args.version == 'FPN_vgg':
-    from models.FPN_Net_vgg import build_net
+if args.version == 'RFB320HL_vgg':
+    from models.RFB320HL_Net_vgg import build_net
 elif args.version == 'HL_vgg':
     from models.HL_Net_vgg import build_net
 else:
@@ -138,14 +129,16 @@ if args.resume_net == None:
     print('Initializing weights...')
     f_writer.write('Initializing weights...\n')
 # initialize newly added layers' weights with kaiming_normal method
-    net.extras.apply(weights_init2)
-    net.loc_1.apply(weights_init2)
-    net.conf_1.apply(weights_init2)
-    net.loc_2.apply(weights_init2)
-    net.conf_2.apply(weights_init2)
-    net.extra_conv_layers.apply(weights_init2)
-    net.extra_smooth_layers.apply(weights_init2)
-    # net.Norm.apply(weights_init)
+    net.extras.apply(weights_init)
+    net.loc_1.apply(weights_init)
+    net.conf_1.apply(weights_init)
+    net.loc_2.apply(weights_init)
+    net.conf_2.apply(weights_init)
+    net.extra_conv_layers.apply(weights_init)
+    net.extra_smooth_layers.apply(weights_init)
+    if args.version == 'RFB320HL_vgg':
+        net.Norm4_3.apply(weights_init)
+        net.Norm7_fc.apply(weights_init)
 
 else:
 # load resume network

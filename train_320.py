@@ -53,8 +53,6 @@ parser.add_argument('--log_iters', default=True,
                     type=bool, help='Print the loss at each iteration')
 parser.add_argument('--save_folder', default='./weights/',
                     help='Location to save checkpoint models')
-parser.add_argument('--C_agnostic', default=False,
-                    type=bool, help='class_agnostic or not')
 args = parser.parse_args()
 
 
@@ -68,10 +66,14 @@ else:
     train_sets = [('2014', 'train'),('2014', 'valminusminival')]
     cfg = (COCO_300, COCO_512)[args.size == '512']
 
-if args.version == 'RFB320HL_vgg':
-    from models.RFB320HL_Net_vgg import build_net
-elif args.version == 'HL_vgg':
-    from models.HL_Net_vgg import build_net
+if args.version == 'RFB320_vgg':
+    from models.RFB320_Net_vgg import build_net
+elif args.version == 'RFB320FPN_vgg':
+    from models.RFB320FPN_Net_vgg import build_net
+elif args.version == 'SINGLE_vgg':
+    from models.SINGLE_Net_vgg import build_net
+elif args.version == 'FPN_vgg':
+    from models.FPN_Net_vgg import build_net
 else:
     print('Unkown version!')
 
@@ -83,9 +85,8 @@ batch_size = args.batch_size
 weight_decay = 0.0005
 gamma = 0.1
 momentum = 0.9
-C_agnostic = args.C_agnostic
 
-net = build_net('train', img_dim, num_classes, C_agnostic)
+net = build_net('train', img_dim, num_classes)
 print(net)
 if args.resume_net == None:
     base_weights = torch.load(args.basenet)
@@ -113,12 +114,11 @@ if args.resume_net == None:
     print('Initializing weights...')
 # initialize newly added layers' weights with kaiming_normal method
     net.extras.apply(weights_init)
-    net.loc_1.apply(weights_init)
-    net.conf_1.apply(weights_init)
-    net.loc_2.apply(weights_init)
-    net.conf_2.apply(weights_init)
-    net.extra_conv_layers.apply(weights_init)
-    net.extra_smooth_layers.apply(weights_init)
+    net.loc.apply(weights_init)
+    net.conf.apply(weights_init)
+    if 'FPN' in args.version:
+        net.extra_conv_layers.apply(weights_init)
+        net.extra_smooth_layers.apply(weights_init)
     if 'RFB' in args.version:
         net.Norm4_3.apply(weights_init)
         net.Norm7_fc.apply(weights_init)
@@ -153,8 +153,7 @@ optimizer = optim.SGD(net.parameters(), lr=args.lr,
 #optimizer = optim.RMSprop(net.parameters(), lr=args.lr,alpha = 0.9, eps=1e-08,
 #                      momentum=args.momentum, weight_decay=args.weight_decay)
 
-criterion = [MultiBoxLoss(2 if C_agnostic else num_classes, 0.5, True, 0, True, 3, 0.5, False),
-             MultiBoxLoss(num_classes, 0.5, True, 0, True, 3, 0.5, False)]
+criterion = MultiBoxLoss(num_classes, 0.5, True, 0, True, 3, 0.5, False)
 priorbox = PriorBox(cfg)
 priors = Variable(priorbox.forward(), volatile=True)
 
@@ -192,11 +191,6 @@ def train():
         start_iter = 0
 
     lr = args.lr
-
-    loss = [None] * 2
-    loss_l = [None] * 2
-    loss_c = [None] * 2
-
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
             # create batch iterator
@@ -216,48 +210,35 @@ def train():
 
 
         # load train data
-        targets = [None] * 2
-        images, targets[1] = next(batch_iterator)
-
-        targets[0] = [None] * len(targets[1])
-        if C_agnostic:
-            for i in range(len(targets[1])):
-                targets[0][i] = targets[1][i].clone()
-                targets[0][i][:,4] = targets[0][i][:,4].ge(1)
-        else:
-            targets[0] = targets[1]
+        images, targets = next(batch_iterator)
         
         #print(np.sum([torch.sum(anno[:,-1] == 2) for anno in targets]))
 
         if args.cuda:
             images = Variable(images.cuda())
-            targets[0] = [Variable(anno.cuda(),volatile=True) for anno in targets[0]]
-            targets[1] = [Variable(anno.cuda(),volatile=True) for anno in targets[1]]
+            targets = [Variable(anno.cuda(),volatile=True) for anno in targets]
         else:
             images = Variable(images)
-            targets[0] = [Variable(anno, volatile=True) for anno in targets[0]]
-            targets[1] = [Variable(anno, volatile=True) for anno in targets[1]]
+            targets = [Variable(anno, volatile=True) for anno in targets]
         # forward
         t0 = time.time()
         out = net(images)
         # backprop
         optimizer.zero_grad()
-        for i in range(len(out)):
-            loss_l[i], loss_c[i] = criterion[i](out[i], priors, targets[i])
-            loss[i] = loss_l[i] + loss_c[i]
-        loss_total = loss[0] + loss[1]
-        loss_total.backward()
+        loss_l, loss_c = criterion(out, priors, targets)
+        loss = loss_l + loss_c
+        loss.backward()
         optimizer.step()
         t1 = time.time()
-        # loc_loss += loss_l.data[0]
-        # conf_loss += loss_c.data[0]
+        loc_loss += loss_l.data[0]
+        conf_loss += loss_c.data[0]
         load_t1 = time.time()
         if iteration % 10 == 0:
             print('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
                   + '|| Totel iter ' +
-                  repr(iteration) + ' || L1: %.4f C1: %.4f||' % (loss_l[0].data[0],loss_c[0].data[0]) + 
-                  ' || L2: %.4f C2: %.4f||' % (loss_l[1].data[0],loss_c[1].data[0]) + 
-                  'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr))
+                  repr(iteration) + ' || L: %.4f C: %.4f||' % (
+                loss_l.data[0],loss_c.data[0]) + 
+                'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr))
 
     torch.save(net.state_dict(), args.save_folder +
                'Final_' + args.version +'_' + args.dataset+ '.pth')
