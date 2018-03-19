@@ -1,9 +1,9 @@
-train_VGG_single_fpn.py and test_VGG_single_fpn.py are used to train and detect Vanilla SSD or fpn SSD structure
-U can specify the argument -v SINGLE_vgg for vanilla SSD and -v FPN_vgg for fpn SSD
+train_320.py and test_320.py are used to train and detect Vanilla SSD or fpn SSD structure
+U can specify the argument -v SINGLE_vgg for vanilla SSD and -v FPN_vgg for fpn SSD and so as RFBstructure
 
 ```
-python train_VGG_single_fpn.py -d VOC -v FPN_vgg -s 320 --ngpu 4
-python test_VGG_single_fpn.py -d VOC -v FPN_vgg -s 320 --trained_model ./weights/Final_FPN_vgg_VOC.pth
+python train_320.py -d VOC -v FPN_vgg -s 320 --ngpu 4
+python test_320.py -d VOC -v FPN_vgg -s 320 --trained_model ./weights/Final_FPN_vgg_VOC.pth
 ```
 
 train_HL.py and test_HL.py are used to train and detect two loss fpn SSD structure
