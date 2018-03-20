@@ -45,17 +45,8 @@ if args.dataset == 'VOC':
 else:
     cfg = (COCO_300, COCO_512)[args.size == '512']
 
-if args.version == 'RFB_vgg':
-    from models.RFB_Net_vgg import build_net
-elif args.version == 'RFB_E_vgg':
-    from models.RFB_Net_E_vgg import build_net
-elif args.version == 'RFB_mobile':
-    from models.RFB_Net_mobile import build_net
-    cfg = COCO_mobile_300
-elif args.version == 'SINGLE_vgg':
-    from models.SINGLE_Net_vgg import build_net
-elif args.version == 'FPN_vgg':
-    from models.FPN_Net_vgg import build_net
+if args.version == 'RFB320HL_vgg':
+    from models.RFB320HL_Net_vgg import build_net
 elif args.version == 'HL_vgg':
     from models.HL_Net_vgg import build_net
 else:
