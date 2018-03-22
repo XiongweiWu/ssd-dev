@@ -33,8 +33,9 @@ parser.add_argument('--cuda', default=True, type=bool,
                     help='Use cuda to train model')
 parser.add_argument('--retest', default=False, type=bool,
                     help='test cache results')
-parser.add_argument('--C_agnostic', default=False,
-                    type=bool, help='class_agnostic or not')
+parser.add_argument('--C_agnostic', dest='C_agnostic', action='store_true')
+parser.add_argument('--no-C_agnostic', dest='C_agnostic', action='store_false')
+parser.set_defaults(C_agnostic=True)
 args = parser.parse_args()
 
 if not os.path.exists(args.save_folder):

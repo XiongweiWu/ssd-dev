@@ -45,7 +45,7 @@ class MultiBoxLoss(nn.Module):
         self.neg_overlap = neg_overlap
         self.variance = [0.1,0.2]
 
-    def forward(self, predictions, priors, targets):
+    def forward(self, predictions, priors, targets, pass_index=None):
         """Multibox Loss
         Args:
             predictions (tuple): A tuple containing loc preds, conf preds,
@@ -53,6 +53,7 @@ class MultiBoxLoss(nn.Module):
                 conf shape: torch.size(batch_size,num_priors,num_classes)
                 loc shape: torch.size(batch_size,num_priors,4)
                 priors shape: torch.size(num_priors,4)
+                pre_conf is used to use Early reject or not
 
             ground_truth (tensor): Ground truth boxes and labels for a batch,
                 shape: [batch_size,num_objs,5] (last idx is the label).
@@ -67,6 +68,7 @@ class MultiBoxLoss(nn.Module):
         # match priors (default boxes) and ground truth boxes
         loc_t = torch.Tensor(num, num_priors, 4)
         conf_t = torch.LongTensor(num, num_priors)
+        
         for idx in range(num):
             truths = targets[idx][:,:-1].data
             labels = targets[idx][:,-1].data
@@ -74,30 +76,62 @@ class MultiBoxLoss(nn.Module):
                 defaults = priors.data[idx,:,:]
             else:
                 defaults = priors.data
+            # if pass_index is not None:
+            #     defaults = defaults[pass_index_data[idx].unsqueeze(1).expand_as(defaults)].view(-1, num)
+
+            # if defaults.shape[0] != 6375:
+            #     print('ERROR')
             match(self.threshold,truths,defaults,self.variance,labels,loc_t,conf_t,idx)
         if GPU:
             loc_t = loc_t.cuda()
             conf_t = conf_t.cuda()
         # wrap targets
+        if pass_index is not None:
+            pass_index_data = pass_index.data
+            loc_t = loc_t[pass_index_data.unsqueeze(2).expand_as(loc_t)].view(-1, 4)
+            conf_t1 = conf_t[pass_index_data]
+            loc_data = loc_data[pass_index_data.unsqueeze(2).expand_as(loc_data)].view(-1, 4)
+            print(conf_t1.shape[0]/num)
+            # conf_data1 = conf_data[pass_index_data.unsqueeze(2).expand_as(conf_data)].view(-1, self.num_classes)
+
         loc_t = Variable(loc_t, requires_grad=False)
         conf_t = Variable(conf_t,requires_grad=False)
 
-        pos = conf_t > 0
-
         # Localization Loss (Smooth L1)
         # Shape: [batch,num_priors,4]
-        pos_idx = pos.unsqueeze(pos.dim()).expand_as(loc_data)
-        loc_p = loc_data[pos_idx].view(-1,4)
-        loc_t = loc_t[pos_idx].view(-1,4)
-        loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False)
+        if pass_index is not None:
+            conf_t1 = Variable(conf_t1,requires_grad=False)
+            pos = conf_t1 > 0
+            pos_idx = pos.unsqueeze(pos.dim()).expand_as(loc_data)
+            loc_p = loc_data[pos_idx].view(-1,4)
+            loc_t = loc_t[pos_idx].view(-1,4)
+            loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False)
+        else:
+            pos = conf_t > 0
+            pos_idx = pos.unsqueeze(pos.dim()).expand_as(loc_data)
+            loc_p = loc_data[pos_idx].view(-1,4)
+            loc_t = loc_t[pos_idx].view(-1,4)
+            loss_l = F.smooth_l1_loss(loc_p, loc_t, size_average=False)
+
+        pos = conf_t > 0
 
         # Compute max conf across batch for hard negative mining
         batch_conf = conf_data.view(-1,self.num_classes)
         loss_c = log_sum_exp(batch_conf) - batch_conf.gather(1, conf_t.view(-1,1))
 
+        # ER
+        if pass_index is None:
+            x_max = batch_conf.data.max()
+            temp = torch.exp(batch_conf[:,0]-x_max) / torch.sum(torch.exp(batch_conf-x_max),1)
+            # print(temp.data.max())
+            temp = temp < 0.99
+            temp_idx = temp.view(num, -1)
+
         # Hard Negative Mining
         loss_c[pos.view(-1)] = 0 # filter out pos boxes for now
         loss_c = loss_c.view(num, -1)
+        if pass_index is not None:
+            loss_c[pass_index_data] = 0
         _,loss_idx = loss_c.sort(1, descending=True)
         _,idx_rank = loss_idx.sort(1)
         num_pos = pos.long().sum(1,keepdim=True)
@@ -116,4 +150,9 @@ class MultiBoxLoss(nn.Module):
         N = num_pos.data.sum()
         loss_l/=N
         loss_c/=N
-        return loss_l,loss_c
+
+        if pass_index is None:
+            index = (pos + temp_idx).gt(0)
+        else:
+            index = None
+        return loss_l, loss_c, index

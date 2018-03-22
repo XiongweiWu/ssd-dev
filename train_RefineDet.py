@@ -54,14 +54,17 @@ parser.add_argument('--log_iters', default=True,
                     type=bool, help='Print the loss at each iteration')
 parser.add_argument('--save_folder', default='./weights/',
                     help='Location to save checkpoint models')
-parser.add_argument('--C_agnostic', default=False,
-                    type=bool, help='class_agnostic or not')
+# parser.add_argument('--C_agnostic', default=False,
+#                     type=bool, help='class_agnostic or not')
+parser.add_argument('--C_agnostic', dest='C_agnostic', action='store_true')
+parser.add_argument('--no-C_agnostic', dest='C_agnostic', action='store_false')
 parser.add_argument('--log_dir', default='./logs/',
                     help='Location to save logs')
 parser.add_argument('--extra', type=str,
                     help='specify extra infos to describe the network')
 parser.add_argument('--bp_anchors', default=False,
                     type=bool, help='whether bp via refined anchors')
+parser.set_defaults(C_agnostic=True)
 args = parser.parse_args()
 
 
@@ -206,7 +209,7 @@ def train():
     epoch_size = len(dataset) // args.batch_size
     max_iter = args.max_epoch * epoch_size
 
-    stepvalues_VOC = (150 * epoch_size, 200 * epoch_size)
+    stepvalues_VOC = (150 * epoch_size, 200 * epoch_size, 250 * epoch_size)
     stepvalues_COCO = (90 * epoch_size, 120 * epoch_size, 140 * epoch_size)
     stepvalues = (stepvalues_VOC,stepvalues_COCO)[args.dataset=='COCO']
     print('Training',args.version, 'on', dataset.name)
@@ -286,10 +289,10 @@ def train():
         # backprop
         optimizer.zero_grad()
 
-        loss_l[0], loss_c[0] = criterion[0](out[0], priors, targets[0])
+        loss_l[0], loss_c[0], pass_index = criterion[0](out[0], priors, targets[0])
         loss[0] = loss_l[0] + loss_c[0]
         
-        loss_l[1], loss_c[1] = criterion[1](out[1], r_priors, targets[1])
+        loss_l[1], loss_c[1], _ = criterion[1](out[1], r_priors, targets[1], pass_index)
         loss[1] = loss_l[1] + loss_c[1]
 
 

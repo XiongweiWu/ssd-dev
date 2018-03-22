@@ -53,8 +53,9 @@ parser.add_argument('--log_iters', default=True,
                     type=bool, help='Print the loss at each iteration')
 parser.add_argument('--save_folder', default='./weights/',
                     help='Location to save checkpoint models')
-parser.add_argument('--C_agnostic', default=False,
-                    type=bool, help='class_agnostic or not')
+parser.add_argument('--C_agnostic', dest='C_agnostic', action='store_true')
+parser.add_argument('--no-C_agnostic', dest='C_agnostic', action='store_false')
+parser.set_defaults(C_agnostic=True)
 args = parser.parse_args()
 
 

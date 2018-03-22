@@ -74,6 +74,8 @@ elif args.version == 'SINGLE_vgg':
     from models.SINGLE_Net_vgg import build_net
 elif args.version == 'FPN_vgg':
     from models.FPN_Net_vgg import build_net
+elif args.version == 'SINGLE_deform_vgg':
+    from models.SINGLE_deform_Net_vgg import build_net
 else:
     print('Unkown version!')
 
@@ -225,7 +227,7 @@ def train():
         out = net(images)
         # backprop
         optimizer.zero_grad()
-        loss_l, loss_c = criterion(out, priors, targets)
+        loss_l, loss_c, _ = criterion(out, priors, targets)
         loss = loss_l + loss_c
         loss.backward()
         optimizer.step()
