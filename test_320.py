@@ -51,6 +51,8 @@ elif args.version == 'SINGLE_vgg':
     from models.SINGLE_Net_vgg import build_net
 elif args.version == 'FPN_vgg':
     from models.FPN_Net_vgg import build_net
+elif args.version == 'SINGLE_deform_vgg':
+    from models.SINGLE_deform_Net_vgg import build_net
 else:
     print('Unkown version!')
 
