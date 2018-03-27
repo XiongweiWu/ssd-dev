@@ -95,10 +95,16 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
         # offsets, _ = res_1
         # True for returned result in center form
         # default is false
-        r_anchors, _ = detector.forward(res_1, priors, C_agnostic, True)
+        r_anchors, r_scores = detector.forward(res_1, priors, C_agnostic, True)
+        # r_scores = r_scores.squeeze(0)
+        # x_max = r_scores.max()
+        # temp = torch.exp(r_scores[:,0]-x_max) / torch.sum(torch.exp(r_scores-x_max),1)
+        pass_index = r_scores[0,:,0] < 0.99
         r_anchors = Variable(r_anchors.squeeze(0), volatile=True)
         # _, out = res_2     # forward pass
         boxes, scores = detector.forward(res_2, r_anchors)
+        boxes = boxes[pass_index.unsqueeze(1).expand_as(boxes)].view(1, -1, 4)
+        scores = scores[pass_index.unsqueeze(0).unsqueeze(2).expand_as(scores)].view(1, -1, num_classes)
         detect_time = _t['im_detect'].toc()
         boxes = boxes[0]
         scores=scores[0]

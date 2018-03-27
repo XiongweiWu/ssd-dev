@@ -131,7 +131,7 @@ class MultiBoxLoss(nn.Module):
         loss_c[pos.view(-1)] = 0 # filter out pos boxes for now
         loss_c = loss_c.view(num, -1)
         if pass_index is not None:
-            loss_c[pass_index_data] = 0
+            loss_c[1-pass_index_data] = 0
         _,loss_idx = loss_c.sort(1, descending=True)
         _,idx_rank = loss_idx.sort(1)
         num_pos = pos.long().sum(1,keepdim=True)

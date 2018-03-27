@@ -11,12 +11,14 @@ U can specify the argument --C_agnostic to use class_agnostic or class_aware los
 the first stage.
 
 ```
-python train_HL.py -d VOC -v HL_vgg -s 320 --C_agnostic True --ngpu 4
-python test_HL.py -d VOC -v HL_vgg -s 320 --trained_model ./weights/Final_HL_vgg_VOC.pth
+python train_HL.py -d VOC -v HL_vgg -s 320 --C_agnostic --ngpu 4
+python test_HL.py -d VOC -v HL_vgg -s 320 --trained_model ./weights/Final_HL_vgg_VOC.pth --C_agnostic
 ```
 
 train_RefineDet.py and test_RefineDet.py are used to train and detect RefineDet
 ```
-python train_RefineDet.py -d VOC -v HL_vgg -s 320 --C_agnostic True --ngpu 8 --extra infos
+python train_RefineDet.py -d VOC -v HL_vgg -s 320 --C_agnostic --ngpu 8 --extra infos
 python test_RefineDet.py -d VOC -v HL_vgg -s 320 --trained_model ./weights/Final_HL_vgg_VOC.pth --C_agnostic True
 ```
+
+# bp_via_anchors doesn't take effect actually.
