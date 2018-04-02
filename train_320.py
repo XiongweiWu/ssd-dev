@@ -53,11 +53,19 @@ parser.add_argument('--log_iters', default=True,
                     type=bool, help='Print the loss at each iteration')
 parser.add_argument('--save_folder', default='./weights/',
                     help='Location to save checkpoint models')
+parser.add_argument('--log_dir', default='./logs/')
+parser.add_argument('--extra', type=str,
+                    help='specify extra infos to describe the network')
 args = parser.parse_args()
 
 
 if not os.path.exists(args.save_folder):
     os.mkdir(args.save_folder)
+if not os.path.exists(args.log_dir):
+    os.mkdir(args.log_dir)
+
+log_file = os.path.join(args.log_dir, args.version+args.dataset+'_SINGLE.log.{}'.format(args.extra))
+f_writer = open(log_file, 'w')
 
 if args.dataset == 'VOC':
     train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
@@ -93,6 +101,7 @@ print(net)
 if args.resume_net == None:
     base_weights = torch.load(args.basenet)
     print('Loading base network...')
+    f_writer.write('Loading base network...\n')
     net.base.load_state_dict(base_weights)
 
     def xavier(param):
@@ -129,6 +138,7 @@ if args.resume_net == None:
 else:
 # load resume network
     print('Loading resume network...')
+    f_writer.write('Initializing weights...\n')
     state_dict = torch.load(args.resume_net)
     # create new OrderedDict that does not contain `module.`
     from collections import OrderedDict
@@ -167,6 +177,7 @@ def train():
     conf_loss = 0
     epoch = 0 + args.resume_epoch
     print('Loading Dataset...')
+    f_writer.write('Loading Dataset...\n')
 
     if args.dataset == 'VOC':
         dataset = VOCDetection(VOCroot, train_sets, preproc(
@@ -185,6 +196,7 @@ def train():
     stepvalues_COCO = (90 * epoch_size, 120 * epoch_size, 140 * epoch_size)
     stepvalues = (stepvalues_VOC,stepvalues_COCO)[args.dataset=='COCO']
     print('Training',args.version, 'on', dataset.name)
+    f_writer.write('Training'+args.version+ 'on'+ dataset.name+ '\n')
     step_index = 0
 
     if args.resume_epoch > 0:
@@ -202,7 +214,7 @@ def train():
             conf_loss = 0
             if (epoch % 40 == 0 and epoch > 0) or (epoch % 10 ==0 and epoch > 200):
                 torch.save(net.state_dict(), args.save_folder+args.version+'_'+args.dataset + '_epoches_'+
-                           repr(epoch) + '.pth')
+                           repr(epoch) + '.pth' + args.extra)
             epoch += 1
 
         load_t0 = time.time()
@@ -241,9 +253,16 @@ def train():
                   repr(iteration) + ' || L: %.4f C: %.4f||' % (
                 loss_l.data[0],loss_c.data[0]) + 
                 'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr))
+            f_writer.write('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
+                  + '|| Totel iter ' +
+                  repr(iteration) + ' || L: %.4f C: %.4f||' % (
+                loss_l.data[0],loss_c.data[0]) + 
+                'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr) + '\n')
 
     torch.save(net.state_dict(), args.save_folder +
-               'Final_' + args.version +'_' + args.dataset+ '.pth')
+               'Final_' + args.version +'_' + args.dataset+ '.pth' + args.extra)
+    f_writer.write('training finished!\n')
+    f_writer.close()
 
 
 def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size):
