@@ -12,8 +12,8 @@ import numpy as np
 from torch.autograd import Variable
 import torch.utils.data as data
 from data import VOCroot, COCOroot, VOC_320, VOC_512, COCO_300, COCO_512, COCO_mobile_300, AnnotationTransform, COCODetection, VOCDetection, detection_collate, BaseTransform, preproc
-from layers.modules import MultiBoxLoss
-from layers.functions import PriorBox
+from layers.modules import ARLoss
+from layers.functions import ARPriorBox
 import time
 
 
@@ -172,8 +172,8 @@ optimizer = optim.SGD(net.parameters(), lr=args.lr,
 #optimizer = optim.RMSprop(net.parameters(), lr=args.lr,alpha = 0.9, eps=1e-08,
 #                      momentum=args.momentum, weight_decay=args.weight_decay)
 
-criterion = MultiBoxLoss(num_classes, 0.5, True, 0, True, 3, 0.5, False)
-priorbox = PriorBox(cfg)
+criterion = ARLoss(num_classes, 0.5, True, 0, True, 3, 0.5, False)
+priorbox = ARPriorBox(cfg)
 priors = Variable(priorbox.forward(), volatile=True)
 
 
@@ -246,8 +246,9 @@ def train():
         out = net(images)
         # backprop
         optimizer.zero_grad()
-        loss_l, loss_c, _ = criterion(out, priors, targets)
+        loss_l, loss_c, loss_w, _ = criterion(out, priors, targets)
         loss = loss_l + loss_c
+        # loss = loss_l + loss_c + 0.01 * loss_w
         loss.backward()
         optimizer.step()
         t1 = time.time()
