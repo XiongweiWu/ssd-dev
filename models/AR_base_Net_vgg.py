@@ -110,7 +110,7 @@ class SINGLEARNet(nn.Module):
         for (x, w) in zip(sources, self.weight):
             temp = w(x)
             weight.append(temp.permute(0, 2, 3, 1).contiguous())
-            weight_volatile.append(Variable(temp.data.clone(), volatile=True))
+            weight_volatile.append(Variable(temp.data.clone(), volatile=False))
 
         ## 
         for i in range(len(sources)):

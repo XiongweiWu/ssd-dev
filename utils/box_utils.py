@@ -219,9 +219,9 @@ def encode2(matched, priors, variances, erf, index):
     # 
     # weight = torch.zeros(g_cxcy.size(0),3)
     temp = torch.zeros(g_cxcy.size(0))
-    temp[dist>=erf*1.5] = 3
-    temp[tensor_and(dist<erf*1.5,dist>=0.5*erf)] = 2
-    temp[dist<0.5*erf] = 1
+    temp[dist>=erf*1] = 3
+    temp[tensor_and(dist<erf*1,dist>=0.2*erf)] = 2
+    temp[dist<0.2*erf] = 1
     temp[index] = 0
     init_weight = torch.FloatTensor([[0, 0, 0, 0], [1, 0.5, 0, 1], [0, 1.5, 0, 2], [0, 0.5, 1, 3]])
     weight = init_weight.cuda()[temp.long()]

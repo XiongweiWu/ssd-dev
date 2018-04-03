@@ -162,15 +162,14 @@ class ARLoss(nn.Module):
 
         weights_ = weights[(pos_idx_2+neg_idx_2).gt(0)].view(-1,3)
         w_t_ = w_t[(pos_idx_2+neg_idx_2).gt(0)].view(-1,3)
-        # loss_w = F.mse_loss(weights_, w_t_, size_average=False)
+        loss_w = F.mse_loss(weights_, w_t_, size_average=False)
         # Sum of losses: L(x,c,l,g) = (Lconf(x, c) + αLloc(x,l,g)) / N
         # another loss weight loss
 
         N = num_pos.data.sum()
         loss_l/=N
         loss_c/=N
-        loss_w = 1
-        # loss_w/=N
+        loss_w/=N
 
         if pass_index is None:
             index = (pos + temp_idx).gt(0)

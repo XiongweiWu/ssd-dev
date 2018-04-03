@@ -247,8 +247,8 @@ def train():
         # backprop
         optimizer.zero_grad()
         loss_l, loss_c, loss_w, _ = criterion(out, priors, targets)
-        loss = loss_l + loss_c
-        # loss = loss_l + loss_c + 0.01 * loss_w
+        # loss = loss_l + loss_c
+        loss = loss_l + loss_c + 0.01 * loss_w
         loss.backward()
         optimizer.step()
         t1 = time.time()
@@ -258,8 +258,8 @@ def train():
         if iteration % 10 == 0:
             print('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
                   + '|| Totel iter ' +
-                  repr(iteration) + ' || L: %.4f C: %.4f||' % (
-                loss_l.data[0],loss_c.data[0]) + 
+                  repr(iteration) + ' || L: %.4f C: %.4f|| W: %.4f ||' % (
+                loss_l.data[0],loss_c.data[0],loss_w.data[0]) + 
                 'Batch time: %.4f sec. ||' % (load_t1 - load_t0) + 'LR: %.8f' % (lr))
             f_writer.write('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
                   + '|| Totel iter ' +
