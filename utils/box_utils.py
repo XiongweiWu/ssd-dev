@@ -210,7 +210,8 @@ def encode2(matched, priors, variances, erf, index):
 
     # dist b/t match center and prior's center
     g_cxcy = (matched[:, :2] + matched[:, 2:])/2 - priors[:, :2]
-    dist, _ = g_cxcy.abs().max(1)
+    # dist, _ = g_cxcy.abs().max(1)
+    dist, _ = (g_cxcy.abs() + (matched[:, 2:] - matched[:, :2])/2).max(1)
     # encode variance
     g_cxcy /= (variances[0] * priors[:, 2:])
     # match wh / prior wh
@@ -219,9 +220,9 @@ def encode2(matched, priors, variances, erf, index):
     # 
     # weight = torch.zeros(g_cxcy.size(0),3)
     temp = torch.zeros(g_cxcy.size(0))
-    temp[dist>=erf*1] = 3
-    temp[tensor_and(dist<erf*1,dist>=0.2*erf)] = 2
-    temp[dist<0.2*erf] = 1
+    temp[dist>=erf*1.1] = 3
+    temp[tensor_and(dist<erf*1.1,dist>=0.7*erf)] = 2
+    temp[dist<0.7*erf] = 1
     temp[index] = 0
     init_weight = torch.FloatTensor([[0, 0, 0, 0], [1, 0.5, 0, 1], [0, 1.5, 0, 2], [0, 0.5, 1, 3]])
     weight = init_weight.cuda()[temp.long()]
