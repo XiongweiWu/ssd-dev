@@ -56,6 +56,7 @@ parser.add_argument('--save_folder', default='./weights/',
 parser.add_argument('--log_dir', default='./logs/')
 parser.add_argument('--extra', type=str,
                     help='specify extra infos to describe the network')
+parser.add_argument('--alpha', default=0.01, type=float, help='weight')
 args = parser.parse_args()
 
 
@@ -219,7 +220,7 @@ def train():
                                                   shuffle=True, num_workers=args.num_workers, collate_fn=detection_collate))
             loc_loss = 0
             conf_loss = 0
-            if (epoch % 40 == 0 and epoch > 0) or (epoch % 10 ==0 and epoch > 200):
+            if (epoch % 20 == 0 and epoch > 0) or (epoch % 10 ==0 and epoch > 200):
                 torch.save(net.state_dict(), args.save_folder+args.version+'_'+args.dataset + '_epoches_'+
                            repr(epoch) + '.pth' + args.extra)
             epoch += 1
@@ -248,7 +249,7 @@ def train():
         optimizer.zero_grad()
         loss_l, loss_c, loss_w, _ = criterion(out, priors, targets)
         # loss = loss_l + loss_c
-        loss = loss_l + loss_c + 0.01 * loss_w
+        loss = loss_l + loss_c + args.alpha * loss_w
         loss.backward()
         optimizer.step()
         t1 = time.time()
